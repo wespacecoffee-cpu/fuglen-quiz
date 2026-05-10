@@ -1,0 +1,63 @@
+name: 🤖 コーヒーブレンドAI 毎日自動改善
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 毎日 11:00 JST (02:00 UTC)
+  workflow_dispatch:
+    inputs:
+      focus:
+        description: '改善フォーカス'
+        required: false
+        default: 'any'
+        type: choice
+        options:
+          - any
+          - bug
+          - data
+          - ui
+          - algorithm
+          - feature
+
+permissions:
+  contents: write
+
+jobs:
+  auto-improve:
+    runs-on: ubuntu-latest
+    name: AI 自動改善
+
+    steps:
+      - name: 📥 リポジトリをチェックアウト
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: 🐍 Python 3.12 をセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 📦 Anthropic SDK をインストール
+        run: pip install --quiet anthropic
+
+      - name: 🤖 AI 改善スクリプトを実行
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FOCUS: ${{ github.event.inputs.focus || 'any' }}
+        run: python scripts/auto_improve.py
+
+      - name: 💾 変更をコミット・プッシュ
+        run: |
+          git config user.name "Fuglen AI Bot"
+          git config user.email "ai-bot@fuglen.no"
+          git add coffee-blend.html improve_log.md
+          if git diff --staged --quiet; then
+            echo "📋 変更なし — コミットをスキップ"
+          else
+            DATE=$(TZ='Asia/Tokyo' date '+%Y-%m-%d')
+            git commit -m "🤖 Auto-improve: $DATE [skip ci]"
+            git push origin main
+            echo "🚀 プッシュ完了"
+          fi
