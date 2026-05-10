@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#d4a847">
+<title>コーヒーブレンドAI – Fuglen</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f17;--surface:#1a1a28;--card:#1e1e2e;
+  --primary:#d4a847;--primary2:#e6c56b;
+  --text:#f0ece3;--text2:#8a8a9a;--border:#2d2d42;
+  --radius:14px;
+}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Hiragino Sans','Noto Sans JP','Helvetica Neue',Arial,sans-serif;
+  min-height:100dvh;padding:20px 16px 60px;
+  display:flex;align-items:flex-start;justify-content:center;
+}
+.wrap{width:100%;max-width:460px}
+.card{background:var(--card);border-radius:20px;padding:24px 20px;box-shadow:0 4px 32px rgba(0,0,0,.5);border:1px solid var(--border)}
+.hidden{display:none!important}
+
+/* ── HEADER ── */
+.pg-header{display:flex;align-items:center;gap:14px;margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.pg-logo{font-size:38px;line-height:1;flex-shrink:0}
+.pg-header-info h1{font-size:17px;font-weight:700;color:var(--primary);letter-spacing:.02em}
+.pg-header-info p{font-size:11px;color:var(--text2);margin-top:3px;line-height:1.5}
+.back-link{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);text-decoration:none;margin-top:6px;transition:color .15s}
+.back-link:hover{color:var(--primary)}
+
+/* ── SECTION LABEL ── */
+.sec-label{font-size:10px;color:var(--text2);font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin-bottom:12px}
+
+/* ── SLIDERS ── */
+.slider-group{margin-bottom:22px}
+.slider-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.slider-name{font-size:13px;color:var(--text);font-weight:600;width:48px;flex-shrink:0}
+.slider-inner{flex:1}
+.slider-track-wrap{display:flex;align-items:center;gap:8px}
+input[type=range]{
+  flex:1;height:20px;cursor:pointer;
+  -webkit-appearance:none;appearance:none;background:transparent;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:4px;background:var(--border);border-radius:2px;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:18px;height:18px;background:var(--primary);
+  border-radius:50%;margin-top:-7px;cursor:pointer;
+  transition:transform .15s;
+}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.2)}
+.slider-minmax{display:flex;justify-content:space-between;font-size:9px;color:var(--text2);margin-top:3px;padding:0 1px}
+.slider-val{font-size:15px;font-weight:700;color:var(--primary);width:16px;text-align:right;flex-shrink:0}
+
+/* ── TAGS ── */
+.tag-section{margin-bottom:22px}
+.tag-group{margin-bottom:12px}
+.tag-group-label{display:block;font-size:10px;color:var(--text2);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:7px}
+.tag-list{display:flex;flex-wrap:wrap;gap:6px}
+.tag{
+  padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;
+  font-size:12px;cursor:pointer;color:var(--text2);
+  transition:all .15s;user-select:none;background:var(--surface);
+}
+.tag:hover{border-color:var(--primary);color:var(--primary)}
+.tag.active{border-color:var(--primary);background:rgba(212,168,71,.15);color:var(--primary);font-weight:700}
+
+/* ── BUTTONS ── */
+.btn-primary{
+  display:block;width:100%;padding:14px;
+  background:var(--primary);color:#0f0f17;
+  border:none;border-radius:var(--radius);
+  font-size:16px;font-weight:700;cursor:pointer;
+  transition:background .2s;letter-spacing:.04em;font-family:inherit;
+}
+.btn-primary:hover{background:var(--primary2)}
+.btn-back{
+  display:block;width:100%;padding:12px;
+  background:transparent;border:2px solid var(--border);border-radius:var(--radius);
+  color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:all .15s;margin-top:12px;text-align:center;
+}
+.btn-back:hover{border-color:var(--primary);color:var(--primary)}
+
+/* ── LOADING ── */
+.loading{text-align:center;padding:52px 20px}
+.loading-icon{font-size:50px;display:block;animation:wobble 1.6s ease-in-out infinite}
+.loading-text{font-size:14px;color:var(--text2);margin-top:16px;font-weight:600}
+.loading-sub{font-size:11px;color:var(--text2);opacity:.55;margin-top:6px;line-height:1.5}
+@keyframes wobble{0%,100%{transform:rotate(-12deg) scale(.95)}50%{transform:rotate(12deg) scale(1.05)}}
+
+/* ── RESULT HEADER ── */
+.result-header{text-align:center;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.result-icon{font-size:42px;display:block;margin-bottom:10px}
+.result-name{font-size:22px;font-weight:700;color:var(--primary);margin-bottom:6px;letter-spacing:.02em}
+.result-desc{font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:12px}
+.flavor-chips{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.flavor-chip{
+  font-size:10px;padding:3px 9px;border-radius:12px;
+  background:rgba(212,168,71,.12);color:var(--primary);
+  border:1px solid rgba(212,168,71,.28);
+}
+
+/* ── TASTE CHART ── */
+.taste-chart{background:var(--surface);border-radius:12px;padding:14px;border:1px solid var(--border);margin-bottom:16px}
+.taste-chart-title{font-size:10px;color:var(--text2);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px}
+.taste-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.taste-bar-row:last-child{margin-bottom:0}
+.taste-bar-label{font-size:11px;color:var(--text2);width:46px;flex-shrink:0;font-weight:600}
+.taste-bar-track{flex:1;background:var(--border);border-radius:3px;height:5px;overflow:hidden}
+.taste-bar-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--primary2));border-radius:3px;transition:width .7s cubic-bezier(.4,0,.2,1)}
+.taste-bar-num{font-size:10px;color:var(--primary);font-weight:700;width:12px;text-align:right;flex-shrink:0}
+
+/* ── BEAN CARDS ── */
+.beans-label{font-size:10px;color:var(--text2);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:9px}
+.bean-card{
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:14px;padding:14px 14px 12px;margin-bottom:10px;
+  position:relative;overflow:hidden;
+}
+.bean-card::before{
+  content:'';position:absolute;top:0;left:0;
+  width:3px;height:100%;background:var(--primary);
+}
+.bean-role{font-size:10px;font-weight:700;color:var(--primary);letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px}
+.bean-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:11px}
+.bean-origin{font-size:16px;font-weight:700;color:var(--text)}
+.bean-region{font-size:11px;color:var(--text2);margin-top:2px;line-height:1.4}
+.bean-ratio{font-size:28px;font-weight:700;color:var(--primary);line-height:1;flex-shrink:0}
+.bean-details{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.bean-detail{display:flex;align-items:baseline;gap:8px}
+.bean-detail-lbl{font-size:10px;color:var(--text2);font-weight:700;width:52px;flex-shrink:0;letter-spacing:.04em}
+.bean-detail-val{font-size:12px;color:var(--text);line-height:1.5;flex:1}
+.roast-row{display:flex;align-items:center;gap:7px}
+.roast-dots{display:flex;gap:3px}
+.roast-dot{width:15px;height:7px;border-radius:3px;background:var(--border);transition:background .3s}
+.roast-dot.on{background:var(--primary)}
+.roast-name{font-size:12px;color:var(--primary);font-weight:700}
+.roast-en{font-size:9px;color:var(--text2);margin-top:2px}
+.bean-note{
+  font-size:11px;color:var(--text2);
+  padding:8px 10px;background:var(--card);
+  border-radius:8px;line-height:1.6;
+  border-left:2px solid rgba(212,168,71,.35);
+}
+
+/* ── BREW NOTE ── */
+.brew-note{background:var(--surface);border-radius:12px;padding:14px;border:1px solid var(--border);margin-top:4px}
+.brew-note-title{font-size:10px;color:var(--text2);font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px}
+.brew-line{
+  display:flex;align-items:flex-start;gap:8px;
+  font-size:12px;color:var(--text);line-height:1.6;
+  margin-bottom:7px;
+}
+.brew-line:last-child{margin-bottom:0}
+.brew-dot{width:4px;height:4px;border-radius:50%;background:var(--primary);flex-shrink:0;margin-top:7px}
+
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ════════════════ INPUT SCREEN ════════════════ -->
+<div id="inputScreen" class="card">
+  <div class="pg-header">
+    <div class="pg-logo">☕</div>
+    <div class="pg-header-info">
+      <h1>コーヒーブレンドAI</h1>
+      <p>味の好みを入力すると産地・プロセス・品種・<br>割合・焙煎度を自動レシピ化します</p>
+      <a href="index.html" class="back-link">← クイズアプリに戻る</a>
+    </div>
+  </div>
+
+  <div class="sec-label">味のプロフィール</div>
+  <div class="slider-group">
+    <div class="slider-row">
+      <span class="slider-name">酸味</span>
+      <div class="slider-inner">
+        <div class="slider-track-wrap">
+          <input type="range" id="slAcidity" min="1" max="5" value="3" oninput="onSlider(this,'vAcidity')">
+          <span class="slider-val" id="vAcidity">3</span>
+        </div>
+        <div class="slider-minmax"><span>弱い</span><span>強い</span></div>
+      </div>
+    </div>
+    <div class="slider-row">
+      <span class="slider-name">甘さ</span>
+      <div class="slider-inner">
+        <div class="slider-track-wrap">
+          <input type="range" id="slSweetness" min="1" max="5" value="3" oninput="onSlider(this,'vSweetness')">
+          <span class="slider-val" id="vSweetness">3</span>
+        </div>
+        <div class="slider-minmax"><span>弱い</span><span>強い</span></div>
+      </div>
+    </div>
+    <div class="slider-row">
+      <span class="slider-name">苦み</span>
+      <div class="slider-inner">
+        <div class="slider-track-wrap">
+          <input type="range" id="slBitterness" min="1" max="5" value="3" oninput="onSlider(this,'vBitterness')">
+          <span class="slider-val" id="vBitterness">3</span>
+        </div>
+        <div class="slider-minmax"><span>弱い</span><span>強い</span></div>
+      </div>
+    </div>
+    <div class="slider-row">
+      <span class="slider-name">ボディ</span>
+      <div class="slider-inner">
+        <div class="slider-track-wrap">
+          <input type="range" id="slBody" min="1" max="5" value="3" oninput="onSlider(this,'vBody')">
+          <span class="slider-val" id="vBody">3</span>
+        </div>
+        <div class="slider-minmax"><span>軽い</span><span>重い</span></div>
+      </div>
+    </div>
+    <div class="slider-row">
+      <span class="slider-name">複雑さ</span>
+      <div class="slider-inner">
+        <div class="slider-track-wrap">
+          <input type="range" id="slComplexity" min="1" max="5" value="3" oninput="onSlider(this,'vComplexity')">
+          <span class="slider-val" id="vComplexity">3</span>
+        </div>
+        <div class="slider-minmax"><span>シンプル</span><span>複雑</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-label">フレーバーノート <span style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text2)">（複数選択可）</span></div>
+  <div class="tag-section">
+    <div class="tag-group">
+      <span class="tag-group-label">🍑 フルーツ</span>
+      <div class="tag-list">
+        <span class="tag" data-tag="citrus">シトラス</span>
+        <span class="tag" data-tag="berry">ベリー</span>
+        <span class="tag" data-tag="tropical">トロピカル</span>
+        <span class="tag" data-tag="apple">りんご</span>
+        <span class="tag" data-tag="peach">ピーチ</span>
+        <span class="tag" data-tag="wine">ワイン</span>
+        <span class="tag" data-tag="dark_fruit">ダークフルーツ</span>
+      </div>
+    </div>
+    <div class="tag-group">
+      <span class="tag-group-label">🌸 花・ハーブ</span>
+      <div class="tag-list">
+        <span class="tag" data-tag="floral">フローラル</span>
+        <span class="tag" data-tag="jasmine">ジャスミン</span>
+        <span class="tag" data-tag="bergamot">アールグレイ</span>
+        <span class="tag" data-tag="herbal">ハーバル</span>
+        <span class="tag" data-tag="tea">ティーライク</span>
+      </div>
+    </div>
+    <div class="tag-group">
+      <span class="tag-group-label">🍫 甘み・スパイス</span>
+      <div class="tag-list">
+        <span class="tag" data-tag="chocolate">チョコレート</span>
+        <span class="tag" data-tag="caramel">キャラメル</span>
+        <span class="tag" data-tag="honey">ハニー</span>
+        <span class="tag" data-tag="nutty">ナッティ</span>
+        <span class="tag" data-tag="spice">スパイス</span>
+        <span class="tag" data-tag="vanilla">バニラ</span>
+      </div>
+    </div>
+    <div class="tag-group">
+      <span class="tag-group-label">🌍 ロースティ・アーシー</span>
+      <div class="tag-list">
+        <span class="tag" data-tag="smoky">スモーキー</span>
+        <span class="tag" data-tag="earthy">アーシー</span>
+        <span class="tag" data-tag="woody">ウッディ</span>
+        <span class="tag" data-tag="roasty">ロースティ</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="generate()">☕ ブレンドを生成する</button>
+</div>
+
+<!-- ════════════════ RESULT SCREEN ════════════════ -->
+<div id="resultScreen" class="card hidden">
+  <div id="resultContent"></div>
+  <div class="divider"></div>
+  <button class="btn-back" onclick="backToInput()">← 条件を変えて再生成</button>
+</div>
+
+</div>
+<script>
+// ══════════════════════════════════════
+//  COFFEE DATABASE
+// ══════════════════════════════════════
+const DB=[
+  {
+    id:'eth_yirg_wash',
+    origin:'エチオピア',region:'イルガチェフェ',
+    process:'ウォッシュト',variety:'エアルーム（在来種）',
+    baseRoast:1,
+    p:{acidity:5,sweetness:3,bitterness:1,body:2,complexity:5},
+    tags:['floral','citrus','bergamot','jasmine','tea'],
+    note:'明るいシトラスと繊細なフローラル。アールグレイを思わせるクリーンな余韻。'
+  },
+  {
+    id:'eth_guji_nat',
+    origin:'エチオピア',region:'グジ',
+    process:'ナチュラル',variety:'エアルーム（在来種）',
+    baseRoast:1,
+    p:{acidity:3,sweetness:5,bitterness:1,body:3,complexity:5},
+    tags:['berry','tropical','wine','dark_fruit','floral'],
+    note:'ブルーベリーやジャムのような濃厚な果実感。ナチュラルプロセスならではの甘さ。'
+  },
+  {
+    id:'eth_sidama_honey',
+    origin:'エチオピア',region:'シダマ',
+    process:'ハニー',variety:'エアルーム（在来種）',
+    baseRoast:2,
+    p:{acidity:4,sweetness:4,bitterness:2,body:3,complexity:4},
+    tags:['honey','tropical','floral','peach','fruity'],
+    note:'ハニーとトロピカルフルーツの優しい甘み。ウォッシュトとナチュラルの良いとこ取り。'
+  },
+  {
+    id:'kenya_kir_wash',
+    origin:'ケニア',region:'キリニャガ',
+    process:'ウォッシュト（ダブルファーメンテッド）',variety:'SL28 / SL34',
+    baseRoast:2,
+    p:{acidity:5,sweetness:3,bitterness:2,body:4,complexity:5},
+    tags:['berry','citrus','dark_fruit','wine'],
+    note:'カシスとグレープフルーツの力強い酸と複雑さ。フルボディで圧倒的な存在感。'
+  },
+  {
+    id:'colombia_huila_wash',
+    origin:'コロンビア',region:'ウィラ',
+    process:'ウォッシュト',variety:'カスティージョ',
+    baseRoast:3,
+    p:{acidity:3,sweetness:4,bitterness:2,body:3,complexity:3},
+    tags:['caramel','apple','honey','nutty'],
+    note:'キャラメルとりんごのまろやかな甘さ。万人に愛されるバランスの良さが持ち味。'
+  },
+  {
+    id:'colombia_pink_nat',
+    origin:'コロンビア',region:'ウィラ',
+    process:'ナチュラル',variety:'ピンクブルボン',
+    baseRoast:2,
+    p:{acidity:4,sweetness:5,bitterness:1,body:3,complexity:5},
+    tags:['berry','tropical','floral','wine','peach'],
+    note:'希少品種ピンクブルボンの華やかな果実味。複雑で気品あるスペシャルティカップ。'
+  },
+  {
+    id:'panama_geisha_wash',
+    origin:'パナマ',region:'ボケテ',
+    process:'ウォッシュト',variety:'ゲイシャ',
+    baseRoast:1,
+    p:{acidity:4,sweetness:4,bitterness:1,body:2,complexity:5},
+    tags:['jasmine','floral','bergamot','tropical','peach','tea'],
+    note:'コーヒーの女王・ゲイシャ種。ジャスミンとアールグレイの類まれな繊細さと気高さ。'
+  },
+  {
+    id:'guatemala_antigua_wash',
+    origin:'グアテマラ',region:'アンティグア',
+    process:'ウォッシュト',variety:'ブルボン / カトゥーラ',
+    baseRoast:3,
+    p:{acidity:3,sweetness:3,bitterness:3,body:4,complexity:3},
+    tags:['chocolate','dark_fruit','caramel','spice','nutty'],
+    note:'チョコレートとスパイスの深み。火山土壌が育む豊かなボディとナッツの余韻。'
+  },
+  {
+    id:'brazil_cerrado_nat',
+    origin:'ブラジル',region:'セラード・ミネイロ',
+    process:'ナチュラル',variety:'ブルボン / カトゥアイ',
+    baseRoast:3,
+    p:{acidity:2,sweetness:4,bitterness:3,body:5,complexity:2},
+    tags:['chocolate','nutty','caramel','vanilla'],
+    note:'チョコレートとナッツの豊かなコク。重厚なボディがブレンドの骨格を力強く支える。'
+  },
+  {
+    id:'brazil_sul_nat',
+    origin:'ブラジル',region:'スル・デ・ミナス',
+    process:'ナチュラル',variety:'ムンドノーボ',
+    baseRoast:4,
+    p:{acidity:1,sweetness:3,bitterness:4,body:5,complexity:2},
+    tags:['chocolate','smoky','roasty','woody','nutty'],
+    note:'ダークチョコとスモーキーな深み。力強いブレンドの土台として頼れるベース豆。'
+  },
+  {
+    id:'costa_rica_honey',
+    origin:'コスタリカ',region:'タラス',
+    process:'イエローハニー',variety:'カトゥーラ',
+    baseRoast:2,
+    p:{acidity:3,sweetness:5,bitterness:2,body:3,complexity:3},
+    tags:['honey','caramel','apple','peach'],
+    note:'蜂蜜のような甘みとキャラメルの余韻。クリーンで親しみやすいハニープロセスの逸品。'
+  },
+  {
+    id:'sumatra_mandheling',
+    origin:'インドネシア',region:'スマトラ（マンデリン）',
+    process:'ウェットハル（スマトラ式）',variety:'ティムティム / アテン',
+    baseRoast:4,
+    p:{acidity:1,sweetness:2,bitterness:4,body:5,complexity:3},
+    tags:['earthy','herbal','woody','spice','smoky'],
+    note:'アーシーでハーバルな独特の個性。重厚なボディと独自プロセスが生む唯一無二の風味。'
+  },
+  {
+    id:'yemen_matari',
+    origin:'イエメン',region:'マタリ',
+    process:'ナチュラル',variety:'イエメン在来種',
+    baseRoast:3,
+    p:{acidity:3,sweetness:3,bitterness:3,body:4,complexity:5},
+    tags:['wine','spice','dark_fruit','chocolate','earthy','floral'],
+    note:'コーヒー発祥の地の神秘的な味。ワインとスパイスが織りなすエキゾチックな複雑さ。'
+  },
+  {
+    id:'honduras_copan_nat',
+    origin:'ホンジュラス',region:'コパン',
+    process:'ナチュラル',variety:'パカス / イカトゥ',
+    baseRoast:3,
+    p:{acidity:3,sweetness:4,bitterness:3,body:4,complexity:3},
+    tags:['chocolate','caramel','berry','nutty'],
+    note:'チョコレートとフルーツが調和したバランス型。ブレンドに広がりと親しみやすさをプラス。'
+  }
+];
+
+// ══════════════════════════════════════
+//  CONSTANTS
+// ══════════════════════════════════════
+const TAG_LABEL={
+  citrus:'シトラス',berry:'ベリー',tropical:'トロピカル',apple:'りんご',
+  peach:'ピーチ',wine:'ワイン',dark_fruit:'ダークフルーツ',jammy:'ジャミー',
+  floral:'フローラル',jasmine:'ジャスミン',bergamot:'アールグレイ',
+  herbal:'ハーバル',tea:'ティーライク',
+  chocolate:'チョコレート',caramel:'キャラメル',honey:'ハニー',
+  nutty:'ナッティ',spice:'スパイス',vanilla:'バニラ',
+  smoky:'スモーキー',earthy:'アーシー',woody:'ウッディ',roasty:'ロースティ',
+  fruity:'フルーティー',blackcurrant:'カシス',sweet:'スウィート',
+};
+const ROAST_JA=['','浅煎り','中浅煎り','中煎り','中深煎り','深煎り'];
+const ROAST_EN=['','Light','Med-Light','Medium','Med-Dark','Dark'];
+
+// ══════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════
+const selectedTags=new Set();
+
+// ══════════════════════════════════════
+//  UI
+// ══════════════════════════════════════
+function onSlider(el,vid){document.getElementById(vid).textContent=el.value}
+
+function initTags(){
+  document.querySelectorAll('.tag').forEach(t=>{
+    t.addEventListener('click',()=>{
+      const k=t.dataset.tag;
+      if(selectedTags.has(k)){selectedTags.delete(k);t.classList.remove('active')}
+      else{selectedTags.add(k);t.classList.add('active')}
+    });
+  });
+}
+
+function getPref(){
+  return{
+    profile:{
+      acidity:    +document.getElementById('slAcidity').value,
+      sweetness:  +document.getElementById('slSweetness').value,
+      bitterness: +document.getElementById('slBitterness').value,
+      body:       +document.getElementById('slBody').value,
+      complexity: +document.getElementById('slComplexity').value,
+    },
+    tags:[...selectedTags]
+  };
+}
+
+// ══════════════════════════════════════
+//  ALGORITHM
+// ══════════════════════════════════════
+function scoreBean(bean,pref){
+  const dims=['acidity','sweetness','bitterness','body','complexity'];
+  const dist=Math.sqrt(dims.reduce((s,d)=>s+Math.pow(bean.p[d]-pref.profile[d],2),0));
+  const maxDist=Math.sqrt(dims.length*16);
+  const profileScore=1-dist/maxDist;
+  const tagScore=pref.tags.length>0
+    ?pref.tags.filter(t=>bean.tags.includes(t)).length/pref.tags.length
+    :0;
+  return profileScore*0.65+tagScore*0.35;
+}
+
+function pickBlend(pref){
+  const scored=DB.map(b=>({...b,score:scoreBean(b,pref)}))
+    .sort((a,b)=>b.score-a.score);
+
+  const primary=scored[0];
+
+  // Secondary: prefer different origin for diversity
+  const secondary=scored.find((b,i)=>i>0&&(b.origin!==primary.origin||b.process!==primary.process))
+    ||scored[1];
+
+  let beans=[primary,secondary];
+
+  // Add tertiary when user wants complexity (≥4) and a clearly different bean exists
+  if(pref.profile.complexity>=4){
+    const third=scored.find(b=>
+      b.id!==primary.id&&b.id!==secondary.id&&
+      b.origin!==primary.origin&&b.origin!==secondary.origin
+    );
+    if(third)beans.push(third);
+  }
+
+  // Assign ratios
+  if(beans.length>=3){
+    beans[0].ratio=50;beans[1].ratio=30;beans[2].ratio=20;
+  }else{
+    const gap=beans[0].score-beans[1].score;
+    if(gap>0.2){beans[0].ratio=65;beans[1].ratio=35;}
+    else{beans[0].ratio=55;beans[1].ratio=45;}
+  }
+  return beans;
+}
+
+function calcOverallRoast(pref){
+  const{acidity,bitterness,body}=pref.profile;
+  const r=(bitterness*1.8+body*1.2-acidity*1.5+3)/2.5;
+  return Math.min(5,Math.max(1,Math.round(r)));
+}
+
+function calcBeanRoast(bean,overallRoast){
+  return Math.min(5,Math.max(1,Math.round((bean.baseRoast+overallRoast)/2)));
+}
+
+// ══════════════════════════════════════
+//  NAMING & DESCRIPTIONS
+// ══════════════════════════════════════
+function blendName(pref){
+  const t=[...selectedTags];
+  const{acidity,sweetness,bitterness,body}=pref.profile;
+  if(t.includes('jasmine')&&t.includes('floral'))return'ジャスミンムーン';
+  if(t.includes('jasmine'))return'ジャスミンドリーム';
+  if(t.includes('bergamot')&&t.includes('floral'))return'フローラルブーケ';
+  if(t.includes('bergamot'))return'アールグレイブリーズ';
+  if(t.includes('berry')&&acidity>=4)return'ワイルドベリー';
+  if(t.includes('chocolate')&&body>=4&&bitterness>=3)return'ダークカカオ';
+  if(t.includes('chocolate')&&sweetness>=4)return'ミルクチョコレート';
+  if(t.includes('caramel')&&sweetness>=4)return'ゴールデンキャラメル';
+  if(t.includes('honey')&&t.includes('peach'))return'サニーハニー';
+  if(t.includes('tropical'))return'トロピカルサンセット';
+  if(t.includes('earthy')&&t.includes('woody'))return'ダークフォレスト';
+  if(t.includes('spice'))return'エキゾチックスパイス';
+  if(t.includes('wine'))return'レッドワインブレンド';
+  if(t.includes('smoky'))return'スモーキーボルケーノ';
+  if(acidity>=4&&sweetness>=4&&bitterness<=2)return'ブライトスウィート';
+  if(bitterness>=4&&body>=4)return'ボールドダーク';
+  if(acidity<=2&&body>=4&&bitterness>=3)return'ヘビーボディクラシック';
+  if(sweetness>=4&&acidity<=3)return'スウィートハーモニー';
+  if(acidity>=4&&body<=2)return'クリスタルライト';
+  if(pref.profile.complexity>=4)return'コンプレックスブーケ';
+  return'バランスドブレンド';
+}
+
+function blendDesc(pref,beans){
+  const roast=calcOverallRoast(pref);
+  let s=`${beans[0].origin}を中心に`;
+  if(beans.length>=3)s+=`${beans[1].origin}・${beans[2].origin}を加えた`;
+  else s+=`${beans[1].origin}を組み合わせた`;
+  if(roast<=2)s+='浅煎りのクリーンでフルーティーなブレンド。';
+  else if(roast===3)s+='バランス良く仕上げた中煎りブレンド。';
+  else s+='深みとコクを重視した深煎りブレンド。';
+  if(selectedTags.size>0){
+    const ts=[...selectedTags].slice(0,3).map(t=>TAG_LABEL[t]||t);
+    s+=`${ts.join('・')}のフレーバーが際立ちます。`;
+  }
+  return s;
+}
+
+function brewLines(pref){
+  const roast=calcOverallRoast(pref);
+  if(roast<=2)return[
+    '推奨器具：ハンドドリップ、エアロプレス、クレバードリッパー',
+    '抽出温度：88〜91°C（高温すぎると繊細な風味が消えてしまいます）',
+    '挽き目：中細挽き。ゆっくり丁寧に注いで香りを引き出しましょう。',
+  ];
+  if(roast===3)return[
+    '推奨器具：ハンドドリップ、フレンチプレス、エスプレッソマシン（対応可）',
+    '抽出温度：92〜94°C',
+    '挽き目：中挽き。オールラウンドに使えるバランスブレンドです。',
+  ];
+  return[
+    '推奨器具：エスプレッソマシン、フレンチプレス、モカポット',
+    '抽出温度：94〜96°C。高温で力強いボディとコクを引き出せます。',
+    '挽き目：細挽き（エスプレッソ）〜粗挽き（フレンチプレス）でお試しください。',
+  ];
+}
+
+// ══════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════
+function renderRoastDots(level){
+  return[1,2,3,4,5].map(i=>`<div class="roast-dot${i<=level?' on':''}"></div>`).join('');
+}
+
+function renderResult(pref,beans){
+  const overallRoast=calcOverallRoast(pref);
+  const name=blendName(pref);
+  const desc=blendDesc(pref,beans);
+
+  const chipHTML=[...selectedTags].slice(0,6)
+    .map(t=>`<span class="flavor-chip">${TAG_LABEL[t]||t}</span>`).join('');
+
+  const dims=[
+    {k:'acidity',l:'酸味'},{k:'sweetness',l:'甘さ'},
+    {k:'bitterness',l:'苦み'},{k:'body',l:'ボディ'},{k:'complexity',l:'複雑さ'}
+  ];
+  const bars=dims.map(d=>`
+    <div class="taste-bar-row">
+      <span class="taste-bar-label">${d.l}</span>
+      <div class="taste-bar-track"><div class="taste-bar-fill" style="width:${pref.profile[d.k]*20}%"></div></div>
+      <span class="taste-bar-num">${pref.profile[d.k]}</span>
+    </div>`).join('');
+
+  const roleNames=beans.length>=3
+    ?['メインビーン','サブビーン','アクセントビーン']
+    :['メインビーン','サブビーン'];
+
+  const beanCards=beans.map((b,i)=>{
+    const rl=calcBeanRoast(b,overallRoast);
+    return`
+    <div class="bean-card">
+      <div class="bean-role">${roleNames[i]}</div>
+      <div class="bean-top">
+        <div>
+          <div class="bean-origin">${b.origin}</div>
+          <div class="bean-region">${b.region}</div>
+        </div>
+        <div class="bean-ratio">${b.ratio}%</div>
+      </div>
+      <div class="bean-details">
+        <div class="bean-detail">
+          <span class="bean-detail-lbl">プロセス</span>
+          <span class="bean-detail-val">${b.process}</span>
+        </div>
+        <div class="bean-detail">
+          <span class="bean-detail-lbl">品種</span>
+          <span class="bean-detail-val">${b.variety}</span>
+        </div>
+        <div class="bean-detail">
+          <span class="bean-detail-lbl">焙煎度</span>
+          <div>
+            <div class="roast-row">
+              <div class="roast-dots">${renderRoastDots(rl)}</div>
+              <span class="roast-name">${ROAST_JA[rl]}</span>
+            </div>
+            <div class="roast-en">${ROAST_EN[rl]}</div>
+          </div>
+        </div>
+      </div>
+      <div class="bean-note">${b.note}</div>
+    </div>`;
+  }).join('');
+
+  const brewLineHTML=brewLines(pref)
+    .map(l=>`<div class="brew-line"><div class="brew-dot"></div><span>${l}</span></div>`)
+    .join('');
+
+  return`
+    <div class="result-header">
+      <span class="result-icon">☕</span>
+      <div class="result-name">${name}</div>
+      <div class="result-desc">${desc}</div>
+      ${chipHTML?`<div class="flavor-chips">${chipHTML}</div>`:''}
+    </div>
+
+    <div class="taste-chart">
+      <div class="taste-chart-title">あなたの味プロフィール</div>
+      ${bars}
+    </div>
+
+    <div class="beans-label">ブレンド構成（${beans.length}豆ブレンド）</div>
+    ${beanCards}
+
+    <div class="brew-note">
+      <div class="brew-note-title">ブリューイングガイド</div>
+      ${brewLineHTML}
+    </div>`;
+}
+
+// ══════════════════════════════════════
+//  MAIN
+// ══════════════════════════════════════
+function generate(){
+  const pref=getPref();
+  const beans=pickBlend(pref);
+
+  document.getElementById('inputScreen').classList.add('hidden');
+  const rs=document.getElementById('resultScreen');
+  rs.classList.remove('hidden');
+  document.getElementById('resultContent').innerHTML=`
+    <div class="loading">
+      <span class="loading-icon">☕</span>
+      <div class="loading-text">AIがベストブレンドを計算中...</div>
+      <div class="loading-sub">産地・プロセス・品種・焙煎度を<br>最適化しています</div>
+    </div>`;
+
+  setTimeout(()=>{
+    document.getElementById('resultContent').innerHTML=renderResult(pref,beans);
+  },1400);
+}
+
+function backToInput(){
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('inputScreen').classList.remove('hidden');
+}
+
+initTags();
+</script>
+</body>
+</html>
