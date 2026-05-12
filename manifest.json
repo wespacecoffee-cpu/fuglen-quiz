@@ -1,7 +1,7 @@
 {
-  "name": "Fuglen スタッフアプリ",
-  "short_name": "Fuglen",
-  "description": "Fuglen Tokyo スタッフ向け：バーテンダークイズ＆コーヒーブレンドAI",
+  "name": "Fuglen バーテンダークイズ",
+  "short_name": "Fuglenクイズ",
+  "description": "Fuglen Tokyoのバーテンダー向けカクテルレシピ・技法・用語クイズアプリ",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f0f17",
@@ -19,22 +19,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "バーテンダークイズ",
-      "short_name": "クイズ",
-      "description": "カクテルレシピ・技法・用語クイズ",
-      "url": "./index.html",
-      "icons": [{ "src": "./icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "コーヒーブレンドAI",
-      "short_name": "ブレンドAI",
-      "description": "味の好みからブレンドレシピを自動生成",
-      "url": "./coffee-blend.html",
-      "icons": [{ "src": "./icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

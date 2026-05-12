@@ -1,8 +1,7 @@
-const CACHE = 'fuglen-v2';
+const CACHE = 'fuglen-v3';
 const ASSETS = [
   './',
   './index.html',
-  './coffee-blend.html',
   './icon-192.png',
   './icon-512.png',
   './manifest.json',
